@@ -20,13 +20,14 @@ getIds = ->
 logIds = (ids) ->
   ids.forEach (id) -> agentForId id
 
-agentForId = (id) ->
-  nightmare
-  .goto "http://apps.gracehopper.org/~abi/prod/resumes/web/index.php/GHC-2015/sponsors/application/view?id=#{id}"
-  .evaluate getInfo, (woman) ->
-    console.log "#{woman["First Name"]} #{woman["Last Name"]}\n#{woman.Phone}"
-    women.push woman
-    fs.writeFile Path.join(__dirname, 'attendees.json'), JSON.stringify(women, null, '\t')
+agentsForIds = (ids) ->
+  ids.forEach (id) ->
+    nightmare
+    .goto "http://apps.gracehopper.org/~abi/prod/resumes/web/index.php/GHC-2015/sponsors/application/view?id=#{id}"
+    .evaluate getInfo, (woman) ->
+      console.log "#{woman["First Name"]} #{woman["Last Name"]}\n#{woman.Phone}"
+      women.push woman
+      fs.writeFile Path.join(__dirname, 'attendees.json'), JSON.stringify(women, null, '\t')
 
 getInfo = ->
   attrs = document.querySelectorAll('.form-group .view-lable span') #.view-lable is a typo in their HTML
@@ -61,11 +62,11 @@ getInfo = ->
   Comments: attrs[28].textContent
   "Locations for Employment": attrs[29].textContent
 
-for page in [1..112]
+for page in [1..43]
   nightmare
-  .goto "http://apps.gracehopper.org/~abi/prod/resumes/web/index.php/GHC-2015/sponsors/application?page=#{page}"
+  .goto "http://apps.gracehopper.org/~abi/prod/resumes/web/index.php/GHC-2015/sponsors/application?ApplicationSearch%5Bfirst_name%5D=&ApplicationSearch%5Blast_name%5D=&ApplicationSearch%5Borganization%5D=&ApplicationSearch%5BcareerInformation%5D%5Bstart_employeement%5D=&ApplicationSearch%5Bcreated_date%5D%5Bfrom%5D=2015-09-11&ApplicationSearch%5Bcreated_date%5D%5BtoDate%5D=2015-09-30&ApplicationSearch%5Bcity%5D=&ApplicationSearch%5Bra_state_id%5D=&ApplicationSearch%5Bus_citizen%5D=&ApplicationSearch%5Bus_work_permit%5D=&ApplicationSearch%5Battending_GHC%5D=&ApplicationSearch%5BstudentInformation%5D%5Bra_student_gpa_id%5D=&ApplicationSearch%5BstudentInformation%5D%5Bra_student_edu_id%5D=&ApplicationSearch%5BstudentInformation%5D%5Bra_student_major_id%5D=&ApplicationSearch%5BprofessionalInformation%5D%5Bra_industry_id%5D=&ApplicationSearch%5BprofessionalInformation%5D%5Byear_experience%5D=&ApplicationSearch%5BprofessionalInformation%5D%5Bskills%5D=&page=#{page}"
   .wait '.kv-grid-table'
-  .evaluate getIds, logIds
+  .evaluate getIds, agentsForIds
 
 nightmare.run (err, n) ->
   console.error err if err isnt undefined
