@@ -7,19 +7,25 @@ auth = require './auth.json'
 women = []
 
 nightmare = new Nightmare(loadImages: false)
+
+# Login
+nightmare
 .goto "http://apps.gracehopper.org/~abi/prod/resumes/web/index.php/GHC-2015/sponsors/default/login"
 .type '#loginform-username', auth.username
 .type '#loginform-password', auth.password
 .click '.btn-green'
 .wait()
 
+# On each page of the table, go through each row and collect the ids for each attendee into an array
+# The attribute on the row elements was 'data-key'
 getIds = ->
-  Array::slice.call(document.querySelectorAll('tbody tr')).map (tr) ->
-    tr.getAttribute 'data-key'
+  Array::slice.call(document.querySelectorAll('tbody tr')).map (tr) -> tr.getAttribute 'data-key'
 
+# Call `agentForId` for each id in the list
 logIds = (ids) ->
   ids.forEach (id) -> agentForId id
 
+# Go to the page to view a single application by id and invoke the `getInfo` method which will extract the data
 agentForId = (id) ->
   nightmare
   .goto "http://apps.gracehopper.org/~abi/prod/resumes/web/index.php/GHC-2015/sponsors/application/view?id=#{id}"
@@ -28,6 +34,7 @@ agentForId = (id) ->
     women.push woman
     fs.writeFile Path.join(__dirname, 'attendees.json'), JSON.stringify(women, null, '\t')
 
+# On the page for a single application, collect the application information into an object
 getInfo = ->
   attrs = document.querySelectorAll('.form-group .view-lable span') #.view-lable is a typo in their HTML
   "First Name": attrs[0].textContent
@@ -61,11 +68,17 @@ getInfo = ->
   Comments: attrs[28].textContent
   "Locations for Employment": attrs[29].textContent
 
+# 112 was the total number of pages at the time.
+# This loop opens up pages 1-112 and waits for the table to be displayed.
+# Once the table is visible, it goes through each row in the table and collects the applicant ids into an array.
+# The function `logIds` takes the array of ids and visits the profile for that id and collects the information from the profile
+# as an object. All the data then gets serialized into a json file.
 for page in [1..112]
   nightmare
   .goto "http://apps.gracehopper.org/~abi/prod/resumes/web/index.php/GHC-2015/sponsors/application?page=#{page}"
   .wait '.kv-grid-table'
   .evaluate getIds, logIds
 
+# Start
 nightmare.run (err, n) ->
   console.error err if err isnt undefined
